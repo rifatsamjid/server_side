@@ -1,6 +1,8 @@
 import app from "./app.js";
-const port = 3000;
+import config from "./config/env.js";
+import { initDB } from "./db/index.js";
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+app.listen(config.port, () => {
+  initDB();
+  console.log(`Example app listening on port ${config.port}`);
 });
