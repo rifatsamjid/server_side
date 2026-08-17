@@ -6,6 +6,7 @@ import express, {
 import dns from "node:dns";
 import net from "node:net";
 import { authRoute } from "./modules/auth/auth.route.js";
+import { issuesRouter } from "./modules/issue/issues.route.js";
 const app: Application = express();
 
 app.use(express.json());
@@ -24,5 +25,6 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use("/api/auth", authRoute);
+app.use("/api/issues",issuesRouter)
 
 export default app;
