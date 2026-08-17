@@ -11,7 +11,7 @@ const createIssuesIntoDB = async (
   const reporter = await pool.query(
     `
     SELECT id, name, email
-    FROM contributor
+    FROM users
     WHERE id=$1 AND is_active=true
     `,
     [reporterId],
@@ -32,7 +32,6 @@ const createIssuesIntoDB = async (
   );
   return {
     ...result.rows[0],
-    reporter: reporter.rows[0],
   };
 };
 
@@ -95,11 +94,7 @@ const getSingleIssue = async (id: number) => {
   };
 };
 
-
-const updateIssue = async (
-  id: number,
-  payload: IUpdateIssue,
-) => {
+const updateIssue = async (id: number, payload: IUpdateIssue) => {
   const { title, description, type, status } = payload;
 
   const result = await pool.query(
@@ -136,7 +131,6 @@ const updateIssue = async (
     reporter: reporter.rows[0],
   };
 };
-
 
 const deleteIssue = async (id: number) => {
   const result = await pool.query(

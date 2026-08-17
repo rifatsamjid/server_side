@@ -9,7 +9,7 @@ const createUserIntoDB = async (payload: IUser) => {
   const hashedPassword = await bcrypt.hash(password, 10);
   const result = await pool.query(
     `
-        INSERT INTO contributor(name,email,password,role) VALUES($1,$2,$3,COALESCE($4,'contributor'))
+        INSERT INTO users(name,email,password,role) VALUES($1,$2,$3,COALESCE($4,'contributor'))
         RETURNING *
         `,
     [name, email, hashedPassword, role],
@@ -25,7 +25,7 @@ const logInUserIntoDB = async (payload: {
   const { email, password } = payload;
   const result = await pool.query(
     `
-       SELECT * FROM contributor WHERE email=$1
+       SELECT * FROM users WHERE email=$1
         `,
     [email],
   );
@@ -42,11 +42,11 @@ const logInUserIntoDB = async (payload: {
     email: user.email,
     role: user.role,
   };
-  const accessToken = jwt.sign(jwtPayload, config.secret as string, {
+  const token = jwt.sign(jwtPayload, config.secret as string, {
     expiresIn: "1d",
   });
   return {
-    accessToken,
+    token,
     user: {
       id: user.id,
       name: user.name,
