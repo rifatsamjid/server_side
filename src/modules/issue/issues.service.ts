@@ -2,7 +2,10 @@ import { pool } from "../../db/index.js";
 import type { ICreateIssue } from "./createIssues.interface.js";
 import type { IUpdateIssue } from "./updateIssues.interface.js";
 
-const createIssuesIntoDB = async (payload: ICreateIssue, reporterId: number) => {
+const createIssuesIntoDB = async (
+  payload: ICreateIssue,
+  reporterId: number,
+) => {
   const { title, description, type } = payload;
 
   const reporter = await pool.query(
@@ -33,10 +36,38 @@ const createIssuesIntoDB = async (payload: ICreateIssue, reporterId: number) => 
   };
 };
 
+const getAllIssues = async () => {
+  const issueResult = await pool.query(`
+    SELECT *
+    FROM issues
+    ORDER BY id DESC
+  `);
 
+  const issues = await Promise.all(
+    issueResult.rows.map(async (issue) => {
+      const userResult = await pool.query(
+        `
+          SELECT id, name, email
+          FROM users
+          WHERE id = $1
+        `,
+        [issue.reporter_id],
+      );
 
+      return {
+        ...issue,
+        reporter: userResult.rows[0] || null,
+      };
+    }),
+  );
+
+  return issues;
+};
 
 export const issuesService = {
-    createIssuesIntoDB,
-    getAllIssues,getSingleIssue,updateIssue,deleteIssue
-}
+  createIssuesIntoDB,
+  getAllIssues,
+  getSingleIssue,
+  updateIssue,
+  deleteIssue,
+};
