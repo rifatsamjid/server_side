@@ -64,6 +64,97 @@ const getAllIssues = async () => {
   return issues;
 };
 
+const getSingleIssue = async (id: number) => {
+  const issueResult = await pool.query(
+    `
+      SELECT *
+      FROM issues
+      WHERE id = $1
+    `,
+    [id],
+  );
+
+  if (issueResult.rows.length === 0) {
+    throw new Error("Issue not found");
+  }
+
+  const issue = issueResult.rows[0];
+
+  const userResult = await pool.query(
+    `
+      SELECT id, name, email
+      FROM users
+      WHERE id = $1
+    `,
+    [issue.reporter_id],
+  );
+
+  return {
+    ...issue,
+    reporter: userResult.rows[0] || null,
+  };
+};
+
+
+const updateIssue = async (
+  id: number,
+  payload: IUpdateIssue,
+) => {
+  const { title, description, type, status } = payload;
+
+  const result = await pool.query(
+    `
+      UPDATE issues
+      SET
+        title = COALESCE($1, title),
+        description = COALESCE($2, description),
+        type = COALESCE($3, type),
+        status = COALESCE($4, status)
+      WHERE id = $5
+      RETURNING *
+    `,
+    [title, description, type, status, id],
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("Issue not found");
+  }
+
+  const issue = result.rows[0];
+
+  const reporter = await pool.query(
+    `
+      SELECT id, name, email
+      FROM contributor
+      WHERE id = $1
+    `,
+    [issue.reporter_id],
+  );
+
+  return {
+    ...issue,
+    reporter: reporter.rows[0],
+  };
+};
+
+
+const deleteIssue = async (id: number) => {
+  const result = await pool.query(
+    `
+      DELETE FROM issues
+      WHERE id = $1
+      RETURNING id
+    `,
+    [id],
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("Issue not found");
+  }
+
+  return result.rows[0];
+};
+
 export const issuesService = {
   createIssuesIntoDB,
   getAllIssues,
