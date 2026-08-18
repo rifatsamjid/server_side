@@ -10,7 +10,7 @@ const createIssues = async (req: Request, res: Response) => {
       message: "Issue created successfully",
       data: result,
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(400).json({
       success: false,
       message: "Failed to create issue",
@@ -28,7 +28,7 @@ const getAllIssues = async (req: Request, res: Response) => {
       message: "Issues retrieved successfully",
       data: result,
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({
       success: false,
       message: "Failed to retrieved issues",
@@ -36,7 +36,27 @@ const getAllIssues = async (req: Request, res: Response) => {
   }
 };
 
+const getSingleIssues = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const result = await issuesService.getSingleIssue(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Issue retrieved successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    res.status(404).json({
+      success: false,
+      message: "Issue not found",
+      error:error
+    })
+  }
+};
+
 export const issuesController = {
   createIssues,
   getAllIssues,
+  getSingleIssues
 };
