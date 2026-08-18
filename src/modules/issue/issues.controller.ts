@@ -19,6 +19,24 @@ const createIssues = async (req: Request, res: Response) => {
   }
 };
 
+const getAllIssues = async (req: Request, res: Response) => {
+  try {
+    const result = await issuesService.getAllIssues();
+
+    res.status(200).json({
+      success: true,
+      message: "Issues retrieved successfully",
+      data: result,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieved issues",
+    });
+  }
+};
+
 export const issuesController = {
-    createIssues
-}
+  createIssues,
+  getAllIssues,
+};
