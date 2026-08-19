@@ -154,7 +154,11 @@ const updateIssue = async (
   throw new Error("You are not authorized to update this issue");
 };
 
-const deleteIssue = async (id: number) => {
+const deleteIssue = async (id: number, user: IAuthUser) => {
+  
+  if (user.role !== "maintainer") {
+    throw new Error("Only maintainer can delete an issue");
+  }
   const result = await pool.query(
     `
       DELETE FROM issues

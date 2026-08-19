@@ -8,5 +8,6 @@ router.post("/", auth(), issuesController.createIssues);
 router.get("/", issuesController.getAllIssues);
 router.get("/:id", issuesController.getSingleIssues);
 router.patch("/:id", auth(), issuesController.updateIssues);
+router.delete("/:id",auth(),issuesController.issueDelete)
 
 export const issuesRouter = router;
