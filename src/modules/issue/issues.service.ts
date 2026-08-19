@@ -1,5 +1,6 @@
 import { pool } from "../../db/index.js";
 import type { ICreateIssue } from "./createIssues.interface.js";
+import type { IGetAllIssuesQuery } from "./getAllIssues.interface.js";
 import type { IAuthUser } from "./updateAuth.interface.js";
 import type { IUpdateIssue } from "./updateIssues.interface.js";
 
@@ -7,13 +8,13 @@ const createIssuesIntoDB = async (
   payload: ICreateIssue,
   reporterId: number,
 ) => {
-  const { title, description, type } = payload;
+  const { title, description, status = "open", type } = payload;
 
   const reporter = await pool.query(
     `
     SELECT id, name, email
     FROM users
-    WHERE id=$1 AND is_active=true
+    WHERE id=$1
     `,
     [reporterId],
   );
@@ -24,30 +25,58 @@ const createIssuesIntoDB = async (
   const result = await pool.query(
     `
     INSERT INTO issues
-    (title, description, type, reporter_id)
+    (title, description, type,status, reporter_id)
       VALUES
-        ($1, $2, $3, $4)
+        ($1, $2, $3, $4,$5)
       RETURNING *
     `,
-    [title, description, type, reporterId],
+    [title, description, type, status, reporterId],
   );
   return {
     ...result.rows[0],
   };
 };
 
-const getAllIssues = async () => {
-  const issueResult = await pool.query(`
+const getAllIssues = async (query: IGetAllIssuesQuery) => {
+  const { sort = "newest", type, status } = query;
+
+  let sql = `
     SELECT *
     FROM issues
-    ORDER BY id DESC
-  `);
+  `;
+
+  const values: string[] = [];
+  const conditions: string[] = [];
+
+  if (type) {
+    values.push(type);
+
+    conditions.push(`type = $${values.length}`);
+  }
+
+  if (status) {
+    values.push(status);
+
+    conditions.push(`status = $${values.length}`);
+  }
+
+  if (conditions.length > 0) {
+    sql += ` WHERE ${conditions.join(" AND ")}`;
+  }
+
+  if (sort === "oldest") {
+    sql += ` ORDER BY created_at ASC`;
+  } else {
+    sql += ` ORDER BY created_at DESC`;
+  }
+
+  const issueResult = await pool.query(sql, values);
 
   const issues = await Promise.all(
     issueResult.rows.map(async (issue) => {
       const userResult = await pool.query(
         `
-          SELECT id, name, email
+          SELECT id, name, email, role
           FROM users
           WHERE id = $1
         `,
@@ -82,7 +111,7 @@ const getSingleIssue = async (id: number) => {
 
   const userResult = await pool.query(
     `
-      SELECT id, name, email
+      SELECT id, name, email,role
       FROM users
       WHERE id = $1
     `,
@@ -155,7 +184,6 @@ const updateIssue = async (
 };
 
 const deleteIssue = async (id: number, user: IAuthUser) => {
-  
   if (user.role !== "maintainer") {
     throw new Error("Only maintainer can delete an issue");
   }

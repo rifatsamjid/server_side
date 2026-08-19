@@ -7,6 +7,10 @@ import config from "../../config/env.js";
 const createUserIntoDB = async (payload: IUser) => {
   const { name, email, password, role = "contributor" } = payload;
   const hashedPassword = await bcrypt.hash(password, 10);
+
+  if (role && !["contributor", "maintainer"].includes(role)) {
+    throw new Error("Role must be either contributor or maintainer");
+  }
   const result = await pool.query(
     `
         INSERT INTO users(name,email,password,role) VALUES($1,$2,$3,COALESCE($4,'contributor'))

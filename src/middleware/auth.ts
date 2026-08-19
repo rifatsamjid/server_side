@@ -29,7 +29,7 @@ const auth = () => {
       };
       const result = await pool.query(
         `
-        SELECT id, name, email, role, is_active
+        SELECT id, name, email, role
           FROM users
           WHERE id = $1
         `,
@@ -44,12 +44,6 @@ const auth = () => {
         });
       }
 
-      if (!user?.is_active) {
-        return res.status(403).json({
-          success: false,
-          message: "User account is inactive",
-        });
-      }
 
       req.user = {
         id: user.id,

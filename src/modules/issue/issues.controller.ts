@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { issuesService } from "./issues.service.js";
+import type { IGetAllIssuesQuery } from "./getAllIssues.interface.js";
 
 const createIssues = async (req: Request, res: Response) => {
   try {
@@ -21,7 +22,7 @@ const createIssues = async (req: Request, res: Response) => {
 
 const getAllIssues = async (req: Request, res: Response) => {
   try {
-    const result = await issuesService.getAllIssues();
+    const result = await issuesService.getAllIssues(req.query as IGetAllIssuesQuery);
 
     res.status(200).json({
       success: true,
@@ -66,7 +67,7 @@ const updateIssues = async (req: Request, res: Response) => {
       message: "Issue update successfully",
       data: result,
     });
-  } catch (error: any) {
+  } catch (error) {
     res.status(400).json({
       success: false,
       message: "Failed to update issue",
