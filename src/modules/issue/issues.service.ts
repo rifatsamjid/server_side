@@ -1,5 +1,6 @@
 import { pool } from "../../db/index.js";
 import type { ICreateIssue } from "./createIssues.interface.js";
+import type { IAuthUser } from "./updateAuth.interface.js";
 import type { IUpdateIssue } from "./updateIssues.interface.js";
 
 const createIssuesIntoDB = async (
@@ -94,42 +95,63 @@ const getSingleIssue = async (id: number) => {
   };
 };
 
-const updateIssue = async (id: number, payload: IUpdateIssue) => {
-  const { title, description, type, status } = payload;
+const updateIssue = async (
+  id: number,
+  payload: IUpdateIssue,
+  user: IAuthUser,
+) => {
+  const { title, description, type } = payload;
 
-  const result = await pool.query(
+  const issueResult = await pool.query(
     `
-      UPDATE issues
-      SET
-        title = COALESCE($1, title),
-        description = COALESCE($2, description),
-        type = COALESCE($3, type),
-        status = COALESCE($4, status)
-      WHERE id = $5
-      RETURNING *
+    SELECT * FROM issues WHERE id=$1
     `,
-    [title, description, type, status, id],
+    [id],
   );
-
-  if (result.rows.length === 0) {
+  if (issueResult.rows.length === 0) {
     throw new Error("Issue not found");
   }
+  const issue = issueResult.rows[0];
 
-  const issue = result.rows[0];
+  if (user.role === "maintainer") {
+    const result = await pool.query(
+      `
+      UPDATE issues
+        SET
+          title = COALESCE($1, title),
+          description = COALESCE($2, description),
+          type = COALESCE($3, type)
+        WHERE id = $4
+        RETURNING *
+      `,
+      [title, description, type, id],
+    );
+    return result.rows[0];
+  }
+  if (user.role === "contributor") {
+    if (issue.reporter_id !== user.id) {
+      throw new Error("You can only update your own issue");
+    }
 
-  const reporter = await pool.query(
-    `
-      SELECT id, name, email
-      FROM contributor
-      WHERE id = $1
-    `,
-    [issue.reporter_id],
-  );
+    if (issue.status !== "open") {
+      throw new Error("You can only update an issue when its status is open");
+    }
 
-  return {
-    ...issue,
-    reporter: reporter.rows[0],
-  };
+    const result = await pool.query(
+      `
+        UPDATE issues
+        SET
+          title = COALESCE($1, title),
+          description = COALESCE($2, description),
+          type = COALESCE($3, type)
+        WHERE id = $4
+        RETURNING *
+      `,
+      [title, description, type, id],
+    );
+    return result.rows[0];
+  }
+  throw new Error("You are not authorized to update this issue");
 };
 
 const deleteIssue = async (id: number) => {
